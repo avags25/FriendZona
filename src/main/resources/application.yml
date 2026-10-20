@@ -1,0 +1,25 @@
+server:
+  port: ${SERVER_PORT:8080}
+spring:
+  application:
+    name: social-world
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:social_world}
+    username: ${DB_USER:social_world}
+    password: ${DB_PASSWORD:change-me-locally}
+  flyway:
+    enabled: true
+social-world:
+  auth:
+    jwt-secret: ${JWT_SECRET:}
+    issuer: ${JWT_ISSUER:social-world}
+    access-token-ttl: ${ACCESS_TOKEN_TTL:PT15M}
+    refresh-token-ttl: ${REFRESH_TOKEN_TTL:P30D}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never

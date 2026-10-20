@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgis/postgis:16-3.5
+    # The upstream image currently publishes amd64 only; Docker Desktop runs it via emulation on Apple Silicon.
+    platform: linux/amd64
+    environment:
+      POSTGRES_DB: ${DB_NAME:-social_world}
+      POSTGRES_USER: ${DB_USER:-social_world}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me-locally}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - social-world-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-social_world} -d ${DB_NAME:-social_world}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  social-world-db:
