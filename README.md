@@ -16,7 +16,7 @@ export SERVER_PORT=8081
 ./mvnw spring-boot:run
 ```
 
-API этапа 2: `POST /api/v1/auth/register`, `/login`, `/refresh`, авторизованный `/logout`, `GET /api/v1/users/me` и `PATCH /api/v1/users/me/profile`. JWT действует 15 минут, refresh-токен — 30 дней; сроки можно задать через `ACCESS_TOKEN_TTL` и `REFRESH_TOKEN_TTL`. Для полного контракта и примеров ошибок см. [API](docs/API.md) и [безопасность](docs/SECURITY.md). Flyway V2 добавляет пароль и refresh-сессии, не изменяя V1; учётные записи, созданные до этапа 2, не имеют пароля и требуют отдельного безопасного восстановления доступа.
+API включает регистрацию, вход, профиль и друзей по постоянному коду. В Flutter доступны список друзей, поиск/отправка заявок, входящие/исходящие запросы и копирование личного кода. Полный API контракт в [docs/API.md](docs/API.md); политика защиты в [docs/SECURITY.md](docs/SECURITY.md). Flyway V3 добавляет код и таблицу дружбы.
 
 Интеграционные тесты используют отдельный временный PostGIS контейнер и не подключаются к базе Compose. Требуются JDK 21 и Docker daemon. Запустить компиляцию, тесты и проверку пакета: `./mvnw clean verify`. Health endpoint работающего приложения: `curl http://localhost:8080/actuator/health`. Flyway применяет миграции при старте приложения. Проверить журнал Flyway и таблицы можно так:
 

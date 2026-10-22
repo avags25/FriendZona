@@ -79,6 +79,7 @@ class DioAuthDataSource implements AuthRemoteDataSource {
   }
 
   late final Dio _dio;
+  Dio get dio => _dio;
 
   @override
   Future<PublicUser> register(RegisterRequest request) async =>

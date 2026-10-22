@@ -5,6 +5,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import com.socialworld.friendship.FriendCodeGenerator;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -16,19 +17,23 @@ import java.util.UUID;
 @Repository
 public class UserRepository {
     private final JdbcTemplate jdbc;
+    private final FriendCodeGenerator friendCodes;
 
-    public UserRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    public UserRepository(JdbcTemplate jdbc, FriendCodeGenerator friendCodes) {
+        this.jdbc = jdbc;
+        this.friendCodes = friendCodes;
+    }
 
     public Optional<UserRecord> findByEmail(String email) {
         return optional(() -> jdbc.queryForObject("""
-                SELECT id, email, display_name, password_hash, created_at, deleted_at
+                SELECT id, email, display_name, friend_code, password_hash, created_at, deleted_at
                 FROM app_user WHERE lower(btrim(email)) = ?
                 """, UserRepository::mapUser, normalizeEmail(email)));
     }
 
     public Optional<UserRecord> findActiveById(UUID id) {
         return optional(() -> jdbc.queryForObject("""
-                SELECT id, email, display_name, password_hash, created_at, deleted_at
+                SELECT id, email, display_name, friend_code, password_hash, created_at, deleted_at
                 FROM app_user WHERE id = ? AND deleted_at IS NULL
                 """, UserRepository::mapUser, id));
     }
@@ -39,29 +44,48 @@ public class UserRepository {
         return Boolean.TRUE.equals(exists);
     }
 
+    public Optional<FriendRecord> findActiveByFriendCode(String friendCode) {
+        try {
+            return Optional.ofNullable(jdbc.queryForObject("""
+                    SELECT id, display_name, friend_code FROM app_user
+                    WHERE friend_code = ? AND deleted_at IS NULL
+                    """, (rs, row) -> new FriendRecord(rs.getObject("id", UUID.class),
+                    rs.getString("display_name"), rs.getString("friend_code")), friendCode));
+        } catch (EmptyResultDataAccessException ignored) {
+            return Optional.empty();
+        }
+    }
+
     public UserRecord create(String email, String displayName, String passwordHash) {
-        return jdbc.queryForObject("""
-                INSERT INTO app_user(id, email, display_name, password_hash)
-                VALUES (?, ?, ?, ?) RETURNING id, email, display_name, password_hash, created_at, deleted_at
-                """, UserRepository::mapUser, UUID.randomUUID(), normalizeEmail(email), displayName.strip(), passwordHash);
+        for (int attempt = 0; attempt < 10; attempt++) {
+            var inserted = jdbc.query("""
+                    INSERT INTO app_user(id, email, display_name, friend_code, password_hash)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT (friend_code) DO NOTHING
+                    RETURNING id, email, display_name, friend_code, password_hash, created_at, deleted_at
+                    """, UserRepository::mapUser, UUID.randomUUID(), normalizeEmail(email), displayName.strip(),
+                    friendCodes.generate(), passwordHash);
+            if (!inserted.isEmpty()) return inserted.getFirst();
+        }
+        throw new IllegalStateException("Unable to generate a unique friend code after retries");
     }
 
     public UserRecord updateDisplayName(UUID id, String displayName) {
         return jdbc.queryForObject("""
                 UPDATE app_user SET display_name = ? WHERE id = ? AND deleted_at IS NULL
-                RETURNING id, email, display_name, password_hash, created_at, deleted_at
+                RETURNING id, email, display_name, friend_code, password_hash, created_at, deleted_at
                 """, UserRepository::mapUser, displayName.strip(), id);
     }
 
     public static String normalizeEmail(String email) { return email.strip().toLowerCase(Locale.ROOT); }
 
     public static PublicUser publicUser(UserRecord user) {
-        return new PublicUser(user.id(), user.email(), user.displayName(), user.createdAt());
+        return new PublicUser(user.id(), user.email(), user.displayName(), user.friendCode(), user.createdAt());
     }
 
     private static UserRecord mapUser(ResultSet rs, int row) throws SQLException {
         return new UserRecord(rs.getObject("id", UUID.class), rs.getString("email"), rs.getString("display_name"),
-                rs.getString("password_hash"), rs.getTimestamp("created_at").toInstant(),
+                rs.getString("friend_code"), rs.getString("password_hash"), rs.getTimestamp("created_at").toInstant(),
                 rs.getTimestamp("deleted_at") == null ? null : rs.getTimestamp("deleted_at").toInstant());
     }
 
@@ -72,7 +96,9 @@ public class UserRepository {
 
     @FunctionalInterface private interface RecordSupplier { UserRecord get(); }
 
-    public record UserRecord(UUID id, String email, String displayName, String passwordHash, Instant createdAt, Instant deletedAt) {
+    public record FriendRecord(UUID id, String displayName, String friendCode) {}
+
+    public record UserRecord(UUID id, String email, String displayName, String friendCode, String passwordHash, Instant createdAt, Instant deletedAt) {
         public PublicUser toPublic() { return publicUser(this); }
     }
 }

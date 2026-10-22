@@ -2,9 +2,9 @@
 
 ## Интеграционные тесты
 
-`src/test/java/com/socialworld/DatabaseIntegrationTest.java` содержит 5 проверок: старт полного контекста, применение V1 и V2 Flyway без повторных записей, фактическую схему/ограничения, PostGIS/geography/GIST и health endpoint.
+`src/test/java/com/socialworld/DatabaseIntegrationTest.java` содержит 5 проверок: старт полного контекста, применение Flyway без повторных записей, фактическую схему/ограничения, PostGIS/geography/GIST и health endpoint.
 
-`src/test/java/com/socialworld/AuthenticationIntegrationTest.java` содержит 22 проверки: регистрацию и уникальность email (включая параллельный запрос), валидацию, хранение пароля-хэша, единообразные ошибки login, выпуск JWT, защиту от отсутствующего/поддельного/истёкшего access token, ротацию/срок действия и параллельное повторное использование refresh-токена, logout/владение сессией, профиль и защиту от подмены пользователя, удалённый аккаунт и health. Всего в Maven lifecycle — 27 интеграционных проверок.
+`src/test/java/com/socialworld/AuthenticationIntegrationTest.java` содержит 22 проверки: регистрацию и уникальность email (включая параллельный запрос), валидацию, хранение пароля-хэша, единообразные ошибки login, выпуск JWT, защиту от отсутствующего/поддельного/истёкшего access token, ротацию/срок действия и параллельное повторное использование refresh-токена, logout/владение сессией, профиль и защиту от подмены пользователя, удалённый аккаунт и health. Вместе с тестами дружбы в Maven lifecycle 36 проверок.
 
 Оба набора запускают отдельный временный `postgis/postgis:16-3.5` Testcontainers контейнер с тестовыми учётными данными и собственным `social_world_test`-подобным database name. Конфигурация подменяется через `@DynamicPropertySource`; production/dev `.env` и Compose база не читаются и не меняются. Секрет JWT тестовый и существует только в тестовом коде. Контейнеры сохраняются до конца JVM, чтобы не завершиться раньше Spring context.
 
@@ -92,3 +92,16 @@ flutter run -d <simulator-id> --dart-define=API_BASE_URL=http://127.0.0.1:8081
 - Social World health на 8081 вернул HTTP 200. В тестовой интеграции реально прошли регистрация, login, `GET /api/v1/users/me`, `PATCH /api/v1/users/me/profile` и logout. Текущие сессии/учётная запись созданы в локальной development базе и не удалялись.
 
 Сначала был проверен занятой 8080: health отвечал, но Social World auth routes возвращали 404, поэтому процесс оставлен без изменений. На свободном 8081 запущен этот Spring Boot backend с локальным `.env`; Flyway сообщил, что схема версии 2 актуальна. Если Docker/сеть недоступны, integration test должен завершиться ошибкой подключения или сборки с причиной; он не пропускается и не подключается к development DB через Testcontainers.
+# Дружеские сценарии
+
+Backend `FriendshipIntegrationTest` запускает полный Spring контекст на отдельном PostgreSQL/PostGIS Testcontainers и проверяет lookup, приватность профиля, создание/повтор запросов, принятие, отказ, отмену, удаление, IDOR/права, встречные запросы и actuator. `FriendshipMigrationIntegrationTest` поднимает схему до V2, создаёт legacy-пользователя и применяет V3, подтверждая сохранность его исходных данных и выдачу кода. Существующие auth и database интеграционные проверки остаются в lifecycle.
+
+Flutter-тесты проверяют отображение/сохранение friend code и разбор DTO/ошибок API; UI использует настоящий backend через общий Dio с auth/refresh interceptor. Интеграционный контракт использует реальный PostgreSQL/PostGIS, поэтому H2 не подходит: он не может подтвердить Flyway/PostGIS или PostgreSQL ограничения и конкурентные транзакции.
+
+Требуются JDK 21 и доступный Docker daemon; тестовая БД создаётся как временный контейнер и не использует `.env` или compose volume. Запуск из корня: `./mvnw clean verify`. Для мобильного клиента из `mobile/`: `flutter pub get`, `dart format .`, `flutter analyze`, `flutter test`, `flutter build ios --simulator`. Если Docker недоступен, Testcontainers выдаёт ошибку `Could not find a valid Docker environment`; запустите Docker Desktop/daemon и повторите команду. Если сеть недоступна при загрузке Maven/Flutter зависимостей, сохраните конкретное сообщение и повторите после восстановления доступа к Maven Central/pub.dev; тесты не пропускаются автоматически.
+
+## Результат системы друзей (2026-10-22)
+
+- JDK 21.0.12.1: `./mvnw clean verify` — `BUILD SUCCESS`, 36 passed, 0 failures/errors/skipped. В тестовой базе PostgreSQL 16.9/PostGIS успешно применены V1–V3; отдельный migration test подтвердил backfill friend code существующему аккаунту без изменения legacy полей.
+- Flutter 3.47.7: `pub get`, `dart format .`, `flutter analyze` и `flutter test` завершились успешно; 16 тестов прошли. `flutter build ios --simulator` создал `mobile/build/ios/iphonesimulator/Runner.app`; приложение запущено на iPhone Duo Simulator.
+- Development Compose DB сохранила данные; при старте backend на свободном 8081 Flyway применил V3. `/actuator/health` вернул `{"groups":["liveness","readiness"],"status":"UP"}`. Полный ручной двухпользовательский UI сценарий не запускался; его базовые состояния и права покрыты backend integration tests.

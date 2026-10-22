@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'auth_repository.dart';
 import 'screens.dart';
+import 'friends.dart';
 
 class AuthRouterRefresh extends ChangeNotifier {
   void changed() => notifyListeners();
@@ -34,6 +35,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RegisterPage(),
       ),
       GoRoute(path: '/home', builder: (context, state) => const HomePage()),
+      GoRoute(
+        path: '/friends',
+        builder: (context, state) => const FriendsPage(),
+      ),
+      GoRoute(
+        path: '/friends/add',
+        builder: (context, state) => const AddFriendPage(),
+      ),
+      GoRoute(
+        path: '/friends/requests',
+        builder: (context, state) => const FriendRequestsPage(),
+      ),
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfilePage(),

@@ -40,6 +40,17 @@ void main() {
         expect(network.message, isNot(contains('Bearer')));
       },
     );
+
+    test('maps friend lookup and request conflicts', () {
+      final missingCode = ApiError.fromDio(
+        _responseError(404, {'code': 'FRIEND_CODE_NOT_FOUND'}),
+      );
+      final pending = ApiError.fromDio(
+        _responseError(409, {'code': 'FRIEND_REQUEST_PENDING'}),
+      );
+      expect(missingCode.message, 'Код друга не найден');
+      expect(pending.message, 'Заявка уже отправлена или обработана');
+    });
   });
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -369,6 +370,16 @@ class HomePage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 28),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.people_outline),
+                title: const Text('Друзья'),
+                subtitle: const Text('Код, список друзей и заявки'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.go('/friends'),
+              ),
+            ),
+            const SizedBox(height: 11),
             Text(
               'Будет в Social World',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -494,6 +505,27 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               style: const TextStyle(color: Color(0xFF777587)),
             ),
             const SizedBox(height: 32),
+            Card(
+              child: ListTile(
+                title: const Text('Код друга'),
+                subtitle: Text(
+                  user.friendCode,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1,
+                  ),
+                ),
+                trailing: IconButton(
+                  tooltip: 'Скопировать код',
+                  icon: const Icon(Icons.copy),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: user.friendCode));
+                    _showMessage(context, 'Код скопирован');
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             Text(
               'Отображаемое имя',
               style: Theme.of(

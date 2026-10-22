@@ -85,7 +85,8 @@ class AuthenticationService {
                 """, Timestamp.from(now), replacementId, session.id());
         if (revoked != 1) throw new InvalidRefreshToken();
 
-        PublicUser user = new PublicUser(session.userId(), session.email(), session.displayName(), session.userCreatedAt());
+        PublicUser user = new PublicUser(session.userId(), session.email(), session.displayName(),
+                session.friendCode(), session.userCreatedAt());
         return response(user, replacementToken, refreshExpiresAt, now);
     }
 
@@ -113,7 +114,7 @@ class AuthenticationService {
     private Optional<RefreshSession> findSessionForUpdate(String tokenHash) {
         return jdbc.query("""
                 SELECT rs.id, rs.user_id, rs.expires_at, rs.revoked_at,
-                       u.email, u.display_name, u.created_at AS user_created_at, u.deleted_at
+                       u.email, u.display_name, u.friend_code, u.created_at AS user_created_at, u.deleted_at
                 FROM refresh_session rs JOIN app_user u ON u.id = rs.user_id
                 WHERE rs.token_hash = ? FOR UPDATE OF rs
                 """, REFRESH_SESSION_MAPPER, tokenHash).stream().findFirst();
@@ -133,10 +134,11 @@ class AuthenticationService {
         Timestamp deleted = rs.getTimestamp("deleted_at");
         return new RefreshSession(rs.getObject("id", UUID.class), rs.getObject("user_id", UUID.class),
                 rs.getTimestamp("expires_at").toInstant(), revoked == null ? null : revoked.toInstant(),
-                rs.getString("email"), rs.getString("display_name"), rs.getTimestamp("user_created_at").toInstant(),
+                rs.getString("email"), rs.getString("display_name"), rs.getString("friend_code"),
+                rs.getTimestamp("user_created_at").toInstant(),
                 deleted == null ? null : deleted.toInstant());
     }
 
     private record RefreshSession(UUID id, UUID userId, Instant expiresAt, Instant revokedAt, String email,
-                                  String displayName, Instant userCreatedAt, Instant deletedAt) {}
+                                  String displayName, String friendCode, Instant userCreatedAt, Instant deletedAt) {}
 }

@@ -16,6 +16,7 @@ void main() {
             'id': '8f68e9ad-f02f-4158-b87c-4d38fd0a68ab',
             'email': 'person@example.com',
             'displayName': 'Alex',
+            'friendCode': 'SW-ABCDEFGH23',
             'createdAt': '2026-10-20T10:00:00Z',
           },
         });

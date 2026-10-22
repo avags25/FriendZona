@@ -24,6 +24,22 @@ class ApiError implements Exception {
         ? data
         : const <String, dynamic>{};
     final serverCode = body['code'] as String?;
+    if (status == 404 && serverCode == 'FRIEND_CODE_NOT_FOUND') {
+      return ApiError(
+        ApiErrorKind.validation,
+        'Код друга не найден',
+        statusCode: status,
+        code: serverCode,
+      );
+    }
+    if (status == 404 && serverCode == 'FRIENDSHIP_NOT_FOUND') {
+      return ApiError(
+        ApiErrorKind.validation,
+        'Друг не найден',
+        statusCode: status,
+        code: serverCode,
+      );
+    }
     if (status == 400) {
       return ApiError(
         ApiErrorKind.validation,
@@ -44,6 +60,23 @@ class ApiError implements Exception {
       );
     }
     if (status == 409) {
+      if (serverCode == 'ALREADY_FRIENDS') {
+        return ApiError(
+          ApiErrorKind.conflict,
+          'Вы уже друзья',
+          statusCode: status,
+          code: serverCode,
+        );
+      }
+      if (serverCode == 'FRIEND_REQUEST_PENDING' ||
+          serverCode == 'INVALID_FRIEND_REQUEST_STATE') {
+        return ApiError(
+          ApiErrorKind.conflict,
+          'Заявка уже отправлена или обработана',
+          statusCode: status,
+          code: serverCode,
+        );
+      }
       return ApiError(
         ApiErrorKind.conflict,
         'Аккаунт с таким email уже существует',

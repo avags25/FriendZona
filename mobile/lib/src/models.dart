@@ -3,18 +3,21 @@ class PublicUser {
     required this.id,
     required this.email,
     required this.displayName,
+    required this.friendCode,
     required this.createdAt,
   });
 
   final String id;
   final String email;
   final String displayName;
+  final String friendCode;
   final DateTime createdAt;
 
   factory PublicUser.fromJson(Map<String, dynamic> json) => PublicUser(
     id: json['id'] as String,
     email: json['email'] as String,
     displayName: json['displayName'] as String,
+    friendCode: json['friendCode'] as String,
     createdAt: DateTime.parse(json['createdAt'] as String),
   );
 
@@ -22,6 +25,7 @@ class PublicUser {
     'id': id,
     'email': email,
     'displayName': displayName,
+    'friendCode': friendCode,
     'createdAt': createdAt.toIso8601String(),
   };
 
@@ -29,6 +33,7 @@ class PublicUser {
     id: id,
     email: email,
     displayName: value,
+    friendCode: friendCode,
     createdAt: createdAt,
   );
 }

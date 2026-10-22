@@ -24,7 +24,7 @@ public final class AuthModels {
     public record LogoutRequest(@NotBlank String refreshToken) {}
     public record ProfilePatchRequest(@NotBlank @Size(max = 80) String displayName) {}
 
-    public record PublicUser(UUID id, String email, String displayName, Instant createdAt) {}
+    public record PublicUser(UUID id, String email, String displayName, String friendCode, Instant createdAt) {}
     public record TokenResponse(String accessToken, String tokenType, long expiresIn,
                                 String refreshToken, Instant refreshExpiresAt, PublicUser user) {}
 }

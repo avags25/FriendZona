@@ -105,7 +105,7 @@ class DatabaseIntegrationTest {
                         WHERE table_schema = current_schema()
                         """, String.class)
                 .stream().collect(Collectors.toSet());
-        assertThat(tables).contains("app_user", "meeting", "meeting_participant", "refresh_session");
+        assertThat(tables).contains("app_user", "meeting", "meeting_participant", "refresh_session", "friendship_request");
 
         assertConstraintDefinition("app_user", "app_user_pkey", "PRIMARY KEY (id)");
         assertConstraintDefinition("app_user", "app_user_email_key", "UNIQUE (email)");
@@ -132,6 +132,16 @@ class DatabaseIntegrationTest {
                   AND indexdef ILIKE '%UNIQUE%' AND indexdef ILIKE '%lower%'
                   AND indexdef ILIKE '%btrim%' AND indexdef ILIKE '%email%'
                 """, Integer.class)).isEqualTo(1);
+
+        assertConstraintDefinition("app_user", "app_user_friend_code_key", "UNIQUE (friend_code)");
+        assertThat(constraintDefinition("app_user", "app_user_friend_code_format_check"))
+                .contains("SW-", "10");
+        assertConstraintDefinition("friendship_request", "friendship_request_pair_key",
+                "UNIQUE (user_low_id, user_high_id)");
+        assertThat(constraintDefinition("friendship_request", "friendship_request_status_check"))
+                .contains("PENDING", "ACCEPTED", "DECLINED");
+        assertThat(constraintDefinition("friendship_request", "friendship_request_pair_order_check"))
+                .contains("user_low_id < user_high_id");
     }
 
     @Test
