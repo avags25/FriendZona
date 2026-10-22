@@ -1,6 +1,6 @@
 # Social World
 
-Техническая основа продукта для планирования реальных встреч между друзьями. Backend на Spring Boot/PostgreSQL/PostGIS включает регистрацию, вход, управление refresh-сессией и собственным профилем. В `mobile/` находится Flutter-клиент для регистрации, входа, просмотра/изменения собственного профиля и выхода; iOS runner подготовлен. Клиент проверен на iPhone Duo Simulator (iOS 27.1), включая реальный auth/profile поток к локальному backend. Сценарии встреч ещё не реализованы.
+Техническая основа продукта для планирования реальных встреч между друзьями. Backend на Spring Boot/PostgreSQL/PostGIS включает регистрацию, вход, управление refresh-сессией и профилем. Flutter-клиент поддерживает auth/profile, друзей и первую интерактивную карту на MapLibre/OpenFreeMap. Сценарии встреч и поиск реальных мест ещё не реализованы.
 
 ## Быстрый старт
 
@@ -32,6 +32,8 @@ docker compose --env-file .env -f infrastructure/docker-compose.yml exec db \
 ## Flutter-клиент
 
 Flutter 3.47.7, Xcode 27.1 и iPhone Duo Simulator установлены. Запустите backend с `SERVER_PORT=8081`, если порт 8080 занят, затем из `mobile/` выполните `flutter pub get` и `flutter run -d <simulator-id> --dart-define=API_BASE_URL=http://127.0.0.1:8081`. Команды анализа, тестов, сборки и интеграционного UI-сценария описаны в [тестировании](docs/TESTING.md); полная настройка — в [документации разработки](docs/DEVELOPMENT_SETUP.md).
+
+Карта использует MapLibre и стиль/векторные тайлы OpenFreeMap Liberty (`MAP_STYLE_URL` позволяет сменить URL стиля). Для реальных мест пока не подключён источник: карта не показывает фиктивные заведения или друзей. При запросе текущего местоположения координата используется только локально для центрирования; внешнему картографическому сервису видны запросы тайлов области карты. Условия провайдера и атрибуция описаны в [настройке разработки](docs/DEVELOPMENT_SETUP.md).
 
 Адрес API при будущем запуске мобильного клиента зависит от устройства: iOS Simulator — `http://127.0.0.1:<порт>`, Android Emulator — `http://10.0.2.2:<порт>`, физическое устройство — `http://<LAN-IP-Mac>:<порт>` в той же сети. `10.0.2.2` — специальный alias Android Emulator для loopback хоста ([документация Android](https://developer.android.com/studio/run/emulator-networking-address)). Инструкции по Flutter находятся в [настройке разработки](docs/DEVELOPMENT_SETUP.md).
 

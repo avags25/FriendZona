@@ -30,6 +30,24 @@ export PATH="$JAVA_HOME/bin:$PATH"
 
 Для тестовых контекстов передаётся тестовый ключ JWT; обычный `spring-boot:run` требует непустой `JWT_SECRET` из окружения. См. `docs/DEVELOPMENT_SETUP.md` и `docs/SECURITY.md`.
 
+## Карта Flutter
+
+`mobile/test/map_location_test.dart` проверяет, что разрешение/координаты запрашиваются только при вызове действия карты, координаты получаются только после разрешения, а отказ/выключенная геолокация/ошибка не приводят к утечке координат через результат ошибки. `mobile/test/map_providers_test.dart` проверяет заменяемый URL стиля. `mobile/integration_test/map_smoke_test.dart` запускается на iOS Simulator с настоящим MapLibre: ожидает загрузку стиля, проверяет атрибуцию, возврат камеры, drag, pinch и отмену диалога местоположения до выдачи системного разрешения. Это не проверяет native-сценарий выдачи/отказа системного permission prompt.
+
+Чтобы собрать iOS-симуляторную версию с картой, нужны доступ к pub.dev, Xcode/iOS SDK и сеть для запросов OpenFreeMap:
+
+```sh
+cd mobile
+flutter pub get
+dart format .
+flutter analyze
+flutter test
+flutter build ios --simulator
+flutter test integration_test/map_smoke_test.dart -d <simulator-id>
+```
+
+Для ручной проверки запустите `flutter run -d <simulator-id>`. Откройте карту с главного экрана, проверьте жесты перемещения/масштабирования и возврат к стартовой области. Геолокацию тестируйте через явное нажатие кнопки; отказ должен оставить карту доступной. Прерывание доступа к сети позволяет проверить ошибку и повторную загрузку. Симуляторная сборка не сама по себе подтверждает отрисовку сетевых тайлов или все жесты.
+
 ## Последняя проверка
 
 2026-10-20: `./mvnw clean verify` на JDK 21.0.12.1 завершился `BUILD SUCCESS`: 27 тестов, 0 failures, 0 errors, 0 skipped. На Apple Silicon оба Testcontainers PostGIS контейнера запускались как amd64 под Docker эмуляцией. Flyway чистой тестовой базы успешно выполнил V1 и V2; повторный `flyway.migrate()` не добавил повторные записи.
@@ -105,3 +123,13 @@ Flutter-тесты проверяют отображение/сохранени�
 - JDK 21.0.12.1: `./mvnw clean verify` — `BUILD SUCCESS`, 36 passed, 0 failures/errors/skipped. В тестовой базе PostgreSQL 16.9/PostGIS успешно применены V1–V3; отдельный migration test подтвердил backfill friend code существующему аккаунту без изменения legacy полей.
 - Flutter 3.47.7: `pub get`, `dart format .`, `flutter analyze` и `flutter test` завершились успешно; 16 тестов прошли. `flutter build ios --simulator` создал `mobile/build/ios/iphonesimulator/Runner.app`; приложение запущено на iPhone Duo Simulator.
 - Development Compose DB сохранила данные; при старте backend на свободном 8081 Flyway применил V3. `/actuator/health` вернул `{"groups":["liveness","readiness"],"status":"UP"}`. Полный ручной двухпользовательский UI сценарий не запускался; его базовые состояния и права покрыты backend integration tests.
+
+## Результат основы карты (2026-10-22)
+
+- JDK 21.0.12.1: `./mvnw clean verify` — `BUILD SUCCESS`, 36 passed, 0 failures/errors/skipped; backend использовал отдельные Testcontainers PostGIS базы.
+- Flutter 3.47.7: `flutter pub get`, `dart format .`, `flutter analyze` — успешно, замечаний анализатора нет; `flutter test` — 23 passed.
+- `flutter build ios --simulator` — успешно, создан `mobile/build/ios/iphonesimulator/Runner.app`.
+- `flutter run -d 14DA36B7-8AAB-49CD-8EF3-2BBF150AAAE0 --dart-define=API_BASE_URL=http://127.0.0.1:8081` сообщил о запуске приложения на iPhone Duo, VM service стал доступен. Backend на 8081 в этом запуске не отвечал, поэтому auth через основное приложение не проходил.
+- `flutter test integration_test/map_smoke_test.dart -d 14DA36B7-8AAB-49CD-8EF3-2BBF150AAAE0` — 1 passed. На настоящем iOS platform view MapLibre загрузил стиль OpenFreeMap, а тест выполнил возврат камеры, drag, pinch и отменил поясняющий диалог геолокации. Это подтвердило загрузку стиля и обработку жестов без backend/тестовых аккаунтов.
+- Нативное окно Simulator не удалось открыть для ручной визуальной инспекции, а снимок headless framebuffer был чёрным. Системный prompt «Разрешить местоположение» с ответом Allow/Don’t Allow вручную не проверялся. Unit-тесты подтверждают поведение сервиса при разрешении, отказе, постоянно запрещённом доступе и выключенной геолокации.
+- Development база и её данные не использовались и не менялись.

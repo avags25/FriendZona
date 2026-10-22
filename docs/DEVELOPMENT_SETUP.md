@@ -48,7 +48,15 @@ flutter --version
 flutter devices
 ```
 
-Нативный iOS runner находится в `mobile/ios/`. Его Debug-конфигурация использует `Runner/Info-Debug.plist` для локального HTTP; Release/Profile используют `Runner/Info.plist`. Android debug cleartext разрешён только в `mobile/android/app/src/debug/AndroidManifest.xml`.
+Нативный iOS runner находится в `mobile/ios/`. Его Debug-конфигурация использует `Runner/Info-Debug.plist` для локального HTTP; Release/Profile используют `Runner/Info.plist`. Оба plist содержат `NSLocationWhenInUseUsageDescription`; разрешение запрашивается только после нажатия «Моё местоположение». Android debug cleartext разрешён только в `mobile/android/app/src/debug/AndroidManifest.xml`.
+
+## Карта
+
+Мобильная карта использует `maplibre_gl` 0.27.1 (лицензия BSD-3-Clause, поддержка iOS 13+) и стартовый стиль OpenFreeMap Liberty (`https://tiles.openfreemap.org/styles/liberty`); API-ключ не требуется. При необходимости можно передать другой совместимый URL стиля: `--dart-define=MAP_STYLE_URL=https://example.org/style.json`. В интерфейсе всегда отображается ссылка `© OpenStreetMap contributors`, а штатная кнопка атрибуции MapLibre показывает дополнительные сведения стиля. OSM-данные распространяются по ODbL; стили/тайлы и их условия принадлежат соответствующим источникам.
+
+OpenFreeMap обозначает публичный сервис как бесплатный, «as-is», без гарантии доступности/точности и может прекратить его ([условия OpenFreeMap](https://openfreemap.org/tos/)). Их условия ограничивают offline download: до 3 000 тайлов или 50 MB за одну загрузку, максимум 4 параллельных запроса и уникальный User-Agent. Приложение не делает предзагрузку; для production следует оценить саморазмещение или провайдера с нужными гарантиями. Запрос текущего положения сначала показывает объяснение. Координаты используются на устройстве для камеры и не отправляются в backend; провайдер карт получает обычные запросы тайлов текущей области карты. OSM требует видимую атрибуцию с доступом к информации о лицензии ([руководство OSMF](https://osmfoundation.org/wiki/Licence/Attribution_Guidelines)).
+
+Поиск кафе и других реальных мест пока не реализован. Следующий этап должен предоставить реализацию `MapPlacesSource` для реального источника данных и показывать его данные отдельно от отрисовки карты.
 
 Запустите backend из корня репозитория, загрузив `.env`, и выберите свободный порт. В этой среде порт 8080 занят сторонним Java-процессом, который не следует останавливать; Social World запускается на 8081:
 

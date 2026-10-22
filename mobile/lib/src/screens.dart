@@ -381,7 +381,7 @@ class HomePage extends ConsumerWidget {
             ),
             const SizedBox(height: 11),
             Text(
-              'Будет в Social World',
+              'Исследуйте Social World',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF26253C),
@@ -389,16 +389,17 @@ class HomePage extends ConsumerWidget {
             ),
             const SizedBox(height: 7),
             const Text(
-              'Разделы появятся, когда будут готовы.',
+              'Карта уже доступна. Другие разделы появятся позже.',
               style: TextStyle(color: Color(0xFF777587)),
             ),
             const SizedBox(height: 16),
-            const _FutureFeatureCard(
+            _FutureFeatureCard(
               icon: Icons.explore_outlined,
               title: 'Карта',
-              description: 'Пространство для мест и ваших планов',
-              tint: Color(0xFFE8F4EF),
-              iconColor: Color(0xFF387B63),
+              description: 'Открыть интерактивную карту',
+              tint: const Color(0xFFE8F4EF),
+              iconColor: const Color(0xFF387B63),
+              onTap: () => context.go('/map'),
             ),
             const SizedBox(height: 11),
             const _FutureFeatureCard(
@@ -846,6 +847,7 @@ class _FutureFeatureCard extends StatelessWidget {
     required this.description,
     required this.tint,
     required this.iconColor,
+    this.onTap,
   });
 
   final IconData icon;
@@ -853,52 +855,57 @@ class _FutureFeatureCard extends StatelessWidget {
   final String description;
   final Color tint;
   final Color iconColor;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(15),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: const Color(0xFFECEAF0)),
-    ),
-    child: Row(
-      children: [
-        Container(
-          width: 47,
-          height: 47,
-          decoration: BoxDecoration(
-            color: tint,
-            borderRadius: BorderRadius.circular(15),
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(20),
+    child: Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFECEAF0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 47,
+            height: 47,
+            decoration: BoxDecoration(
+              color: tint,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(icon, color: iconColor),
           ),
-          child: Icon(icon, color: iconColor),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF302E43),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF302E43),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: const TextStyle(
-                  fontSize: 12,
-                  height: 1.35,
-                  color: Color(0xFF807E8D),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: Color(0xFF807E8D),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const _Pill(label: 'СКОРО', light: true),
-      ],
+          if (onTap == null) const _Pill(label: 'СКОРО', light: true),
+        ],
+      ),
     ),
   );
 }
