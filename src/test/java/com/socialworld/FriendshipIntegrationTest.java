@@ -113,6 +113,9 @@ class FriendshipIntegrationTest {
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
         mvc.perform(get("/api/v1/friends")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/friends/requests/incoming")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/friends/requests").contentType(APPLICATION_JSON)
+                        .content("{\"friendCode\":\"" + user.friendCode + "\"}"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -144,6 +147,10 @@ class FriendshipIntegrationTest {
         mvc.perform(get("/api/v1/friends").header("Authorization", bearer(recipient.accessToken)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].userId").value(sender.userId.toString()));
         assertThat(pairStatus(sender.userId, recipient.userId)).isEqualTo("ACCEPTED");
+
+        send(sender, recipient.friendCode).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ALREADY_FRIENDS"));
+        assertThat(pairCount(sender.userId, recipient.userId)).isEqualTo(1);
     }
 
     @Test
@@ -152,6 +159,9 @@ class FriendshipIntegrationTest {
         Session recipient = account("decline-recipient");
         UUID originalId = requestId(send(sender, recipient.friendCode).andReturn());
 
+        mvc.perform(post("/api/v1/friends/requests/{id}/decline", originalId)
+                        .header("Authorization", bearer(sender.accessToken)))
+                .andExpect(status().isForbidden());
         mvc.perform(post("/api/v1/friends/requests/{id}/decline", originalId)
                         .header("Authorization", bearer(recipient.accessToken)))
                 .andExpect(status().isNoContent());
@@ -202,6 +212,10 @@ class FriendshipIntegrationTest {
                         .header("Authorization", bearer(first.accessToken)))
                 .andExpect(status().isNoContent());
         assertThat(pairCount(first.userId, second.userId)).isZero();
+        mvc.perform(get("/api/v1/friends").header("Authorization", bearer(first.accessToken)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+        mvc.perform(get("/api/v1/friends").header("Authorization", bearer(second.accessToken)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
     }
 
     @Test

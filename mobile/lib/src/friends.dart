@@ -154,10 +154,11 @@ class FriendsPage extends ConsumerWidget {
                         trailing: IconButton(
                           icon: const Icon(Icons.person_remove_outlined),
                           tooltip: 'Удалить из друзей',
-                          onPressed: () async {
-                            await ref.read(friendsApiProvider).remove(f.userId);
-                            invalidateFriendLists(ref);
-                          },
+                          onPressed: () => _runFriendAction(
+                            context,
+                            ref,
+                            () => ref.read(friendsApiProvider).remove(f.userId),
+                          ),
                         ),
                       ),
                     )
@@ -205,12 +206,17 @@ class _AddFriendPageState extends ConsumerState<AddFriendPage> {
   Future<void> _send() async {
     setState(() => _busy = true);
     try {
-      await ref.read(friendsApiProvider).send(_code.text.trim());
+      final request = await ref
+          .read(friendsApiProvider)
+          .send(_code.text.trim());
       invalidateFriendLists(ref);
       if (mounted) {
+        final message = request.status == 'ACCEPTED'
+            ? 'Теперь вы друзья'
+            : 'Заявка отправлена';
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Заявка отправлена')));
+        ).showSnackBar(SnackBar(content: Text(message)));
         context.pop();
       }
     } catch (e) {
@@ -337,34 +343,37 @@ class _RequestsList extends ConsumerWidget {
                                 IconButton(
                                   tooltip: 'Принять',
                                   icon: const Icon(Icons.check),
-                                  onPressed: () async {
-                                    await ref
+                                  onPressed: () => _runFriendAction(
+                                    context,
+                                    ref,
+                                    () => ref
                                         .read(friendsApiProvider)
-                                        .action(item.requestId, 'accept');
-                                    invalidateFriendLists(ref);
-                                  },
+                                        .action(item.requestId, 'accept'),
+                                  ),
                                 ),
                                 IconButton(
                                   tooltip: 'Отклонить',
                                   icon: const Icon(Icons.close),
-                                  onPressed: () async {
-                                    await ref
+                                  onPressed: () => _runFriendAction(
+                                    context,
+                                    ref,
+                                    () => ref
                                         .read(friendsApiProvider)
-                                        .action(item.requestId, 'decline');
-                                    invalidateFriendLists(ref);
-                                  },
+                                        .action(item.requestId, 'decline'),
+                                  ),
                                 ),
                               ],
                             )
                           : IconButton(
                               tooltip: 'Отменить заявку',
                               icon: const Icon(Icons.cancel_outlined),
-                              onPressed: () async {
-                                await ref
+                              onPressed: () => _runFriendAction(
+                                context,
+                                ref,
+                                () => ref
                                     .read(friendsApiProvider)
-                                    .cancel(item.requestId);
-                                invalidateFriendLists(ref);
-                              },
+                                    .cancel(item.requestId),
+                              ),
                             ),
                     ),
                   )
@@ -376,3 +385,20 @@ class _RequestsList extends ConsumerWidget {
 
 String _error(Object error) =>
     error is ApiError ? error.message : 'Не удалось выполнить запрос';
+
+Future<void> _runFriendAction(
+  BuildContext context,
+  WidgetRef ref,
+  Future<void> Function() action,
+) async {
+  try {
+    await action();
+    invalidateFriendLists(ref);
+  } catch (error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_error(error))));
+    }
+  }
+}
